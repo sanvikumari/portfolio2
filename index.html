@@ -1,0 +1,1130 @@
+<script type="text/javascript">
+    var gk_isXlsx = false;
+    var gk_xlsxFileLookup = {};
+    var gk_fileData = {};
+    function filledCell(cell) {
+      return cell !== '' && cell != null;
+    }
+    function loadFileData(filename) {
+    if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+        try {
+            var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+            var firstSheetName = workbook.SheetNames[0];
+            var worksheet = workbook.Sheets[firstSheetName];
+
+            // Convert sheet to JSON to filter blank rows
+            var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+            // Filter out blank rows (rows where all cells are empty, null, or undefined)
+            var filteredData = jsonData.filter(row => row.some(filledCell));
+
+            // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+            var headerRowIndex = filteredData.findIndex((row, index) =>
+              row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+            );
+            // Fallback
+            if (headerRowIndex === -1 || headerRowIndex > 25) {
+              headerRowIndex = 0;
+            }
+
+            // Convert filtered JSON back to CSV
+            var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+            csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+            return csv;
+        } catch (e) {
+            console.error(e);
+            return "";
+        }
+    }
+    return gk_fileData[filename] || "";
+    }
+    </script><!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alex Carter | Web Developer</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+    /* Global Styles */
+    :root {
+        --primary-color: #2c3e50;
+        --secondary-color: #3498db;
+        --accent-color: #e74c3c;
+        --light-color: #ecf0f1;
+        --dark-color: #2c3e50;
+        --text-color: #333;
+        --text-light: #fff;
+    }
+    
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
+        color: var(--text-color);
+        background-color: var(--light-color);
+        overflow-x: hidden;
+    }
+    
+    a {
+        text-decoration: none;
+        color: var(--secondary-color);
+    }
+    
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 20px;
+    }
+    
+    .btn {
+        display: inline-block;
+        background: var(--secondary-color);
+        color: var(--text-light);
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .btn:hover {
+        background: #2980b9;
+        transform: translateY(-2px);
+    }
+    
+    .btn-accent {
+        background: var(--accent-color);
+    }
+    
+    .btn-accent:hover {
+        background: #c0392b;
+    }
+    
+    /* Preloader */
+    .preloader {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: var(--primary-color);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        transition: opacity 0.5s ease;
+    }
+    
+    .preloader.hidden {
+        opacity: 0;
+        pointer-events: none;
+    }
+    
+    .loader {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid var(--secondary-color);
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    /* Header & Navigation */
+    header {
+        background: var(--primary-color);
+        color: var(--text-light);
+        padding: 20px 0;
+        position: fixed;
+        width: 100%;
+        top: 0;
+        z-index: 100;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .nav-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .logo {
+        font-size: 24px;
+        font-weight: bold;
+    }
+    
+    .logo span {
+        color: var(--secondary-color);
+    }
+    
+    nav ul {
+        display: flex;
+        list-style: none;
+    }
+    
+    nav ul.active {
+        transform: translateX(0);
+    }
+    
+    nav ul li {
+        margin-left: 30px;
+    }
+    
+    nav ul li a {
+        color: var(--text-light);
+        font-weight: 500;
+        transition: color 0.3s ease;
+    }
+    
+    nav ul li a:hover {
+        color: var(--secondary-color);
+    }
+    
+    .hamburger {
+        display: none;
+        cursor: pointer;
+        font-size: 24px;
+    }
+    
+    /* Hero Section */
+    .hero {
+        height: 100vh;
+        background: linear-gradient(rgba(44, 62, 80, 0.8), rgba(44, 62, 80, 0.8)), 
+                    url('https://images.unsplash.com/photo-1498050108023-c5249f4df085?ixlib=rb-4.0.3&auto=format&fit=crop&w=1472&q=80') no-repeat center center/cover;
+        color: var(--text-light);
+        display: flex;
+        align-items: center;
+        text-align: center;
+        padding-top: 80px;
+    }
+    
+    .hero-content {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .hero h1 {
+        font-size: 48px;
+        margin-bottom: 20px;
+        animation: fadeInDown 1s ease-out;
+    }
+    
+    .hero p {
+        font-size: 20px;
+        margin-bottom: 30px;
+        animation: fadeInUp 1s ease-out 0.2s;
+        animation-fill-mode: backwards;
+    }
+    
+    .hero .btn {
+        animation: fadeInUp 1s ease-out 0.4s;
+        animation-fill-mode: backwards;
+    }
+    
+    @keyframes fadeInDown {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Scroll Animation */
+    .fade-in {
+        opacity: 0;
+        transform: translateY(30px);
+        transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+    }
+    
+    .fade-in.visible {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    
+    /* About Section */
+    .section {
+        padding: 100px 0;
+    }
+    
+    .section-title {
+        text-align: center;
+        margin-bottom: 50px;
+    }
+    
+    .section-title h2 {
+        font-size: 36px;
+        color: var(--primary-color);
+        position: relative;
+        display: inline-block;
+        padding-bottom: 15px;
+    }
+    
+    .section-title h2::after {
+        content: '';
+        position: absolute;
+        width: 50%;
+        height: 3px;
+        background: var(--secondary-color);
+        bottom: 0;
+        left: 25%;
+    }
+    
+    .about-content {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 50px;
+        align-items: center;
+    }
+    
+    .about-text h3 {
+        font-size: 24px;
+        margin-bottom: 20px;
+        color: var(--primary-color);
+    }
+    
+    .skills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin-top: 20px;
+    }
+    
+    .skill {
+        background: var(--secondary-color);
+        color: var(--text-light);
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-size: 14px;
+    }
+    
+    /* Portfolio Section */
+    .portfolio {
+        background: #f9f9f9;
+    }
+    
+    .portfolio-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 30px;
+    }
+    
+    .portfolio-card {
+        position: relative;
+        overflow: hidden;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .portfolio-card img {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+        transition: transform 0.3s ease;
+    }
+    
+    .portfolio-card:hover img {
+        transform: scale(1.1);
+    }
+    
+    .portfolio-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        color: var(--text-light);
+    }
+    
+    .portfolio-card:hover .portfolio-overlay {
+        opacity: 1;
+    }
+    
+    .portfolio-overlay h3 {
+        margin-bottom: 10px;
+    }
+    
+    .portfolio-overlay a {
+        color: var(--text-light);
+        border: 1px solid var(--text-light);
+        padding: 5px 10px;
+        border-radius: 5px;
+    }
+    
+    .portfolio-overlay a:hover {
+        background: var(--secondary-color);
+        border-color: var(--secondary-color);
+    }
+    
+    /* Services Section */
+    .services {
+        background: #f9f9f9;
+    }
+    
+    .services-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 30px;
+    }
+    
+    .service-card {
+        background: var(--text-light);
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease;
+        text-align: center;
+    }
+    
+    .service-card:hover {
+        transform: translateY(-10px);
+    }
+    
+    .service-card i {
+        font-size: 40px;
+        color: var(--secondary-color);
+        margin-bottom: 20px;
+    }
+    
+    .service-card h3 {
+        margin-bottom: 15px;
+        color: var(--primary-color);
+    }
+    
+    /* Contact Section */
+    .contact {
+        background: var(--primary-color);
+        color: var(--text-light);
+    }
+    
+    .contact .section-title h2 {
+        color: var(--text-light);
+    }
+    
+    .contact .section-title h2::after {
+        background: var(--accent-color);
+    }
+    
+    .contact-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 50px;
+    }
+    
+    .contact-info h3 {
+        font-size: 24px;
+        margin-bottom: 20px;
+    }
+    
+    .contact-info p {
+        margin-bottom: 30px;
+    }
+    
+    .contact-details {
+        margin-top: 30px;
+    }
+    
+    .contact-details div {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    
+    .contact-details i {
+        margin-right: 15px;
+        color: var(--secondary-color);
+        font-size: 20px;
+    }
+    
+    /* Contact Form */
+    .contact-form {
+        background: var(--text-light);
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        position: relative;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-family: inherit;
+        font-size: 16px;
+    }
+    
+    textarea.form-control {
+        resize: vertical;
+        min-height: 150px;
+    }
+    
+    .error {
+        color: var(--accent-color);
+        font-size: 14px;
+        margin-top: 5px;
+        display: none;
+    }
+    
+    .form-message {
+        margin-top: 10px;
+        padding: 10px;
+        border-radius: 5px;
+        display: none;
+    }
+    
+    .form-message.success {
+        background: #e8f8f5;
+        color: #2ecc71;
+        display: block;
+    }
+    
+    .form-message.error {
+        background: #fce4e4;
+        color: var(--accent-color);
+        display: block;
+    }
+    
+    .loading {
+        pointer-events: none;
+        opacity: 0.7;
+    }
+    
+    /* To-Do List Section */
+    .todo-section {
+        background: #f9f9f9;
+    }
+    
+    .todo-container {
+        max-width: 800px;
+        margin: 0 auto;
+        background: var(--text-light);
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .todo-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    
+    .todo-input {
+        display: flex;
+        margin-bottom: 20px;
+    }
+    
+    .todo-input input {
+        flex: 1;
+        padding: 12px;
+        border: 1px solid #ddd;
+        border-radius: 5px 0 0 5px;
+        font-size: 16px;
+    }
+    
+    .todo-input button {
+        padding: 12px 20px;
+        background: var(--secondary-color);
+        color: var(--text-light);
+        border: none;
+        border-radius: 0 5px 5px 0;
+        cursor: pointer;
+        transition: background 0.3s ease;
+    }
+    
+    .todo-input button:hover {
+        background: #2980b9;
+    }
+    
+    .todo-list {
+        list-style: none;
+    }
+    
+    .todo-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px;
+        background: #f5f5f5;
+        border-radius: 5px;
+        margin-bottom: 10px;
+        transition: all 0.3s ease;
+    }
+    
+    .todo-item:hover {
+        background: #eee;
+    }
+    
+    .todo-item.completed {
+        background: #e8f8f5;
+        text-decoration: line-through;
+        color: #888;
+    }
+    
+    .todo-item span {
+        flex: 1;
+        margin-left: 10px;
+        cursor: pointer;
+    }
+    
+    .todo-item button {
+        background: var(--accent-color);
+        color: var(--text-light);
+        border: none;
+        padding: 5px 10px;
+        border-radius: 3px;
+        cursor: pointer;
+        transition: background 0.3s ease;
+    }
+    
+    .todo-item button:hover {
+        background: #c0392b;
+    }
+    
+    /* Footer */
+    footer {
+        background: var(--dark-color);
+        color: var(--text-light);
+        text-align: center;
+        padding: 30px 0;
+    }
+    
+    .social-links {
+        margin: 20px 0;
+    }
+    
+    .social-links a {
+        display: inline-block;
+        margin: 0 10px;
+        color: var(--text-light);
+        font-size: 20px;
+        transition: color 0.3s ease;
+    }
+    
+    .social-links a:hover {
+        color: var(--secondary-color);
+    }
+    
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .nav-container {
+            flex-direction: column;
+            text-align: center;
+        }
+        
+        nav ul {
+            flex-direction: column;
+            position: fixed;
+            top: 80px;
+            left: 0;
+            width: 100%;
+            background: var(--primary-color);
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+            padding: 20px 0;
+        }
+        
+        nav ul li {
+            margin: 15px 0;
+        }
+        
+        .hamburger {
+            display: block;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+        
+        .about-content,
+        .contact-container,
+        .portfolio-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .hero h1 {
+            font-size: 36px;
+        }
+        
+        .hero p {
+            font-size: 18px;
+        }
+        
+        .section {
+            padding: 60px 0;
+        }
+    }
+</style>
+</head>
+<body>
+<!-- Preloader -->
+<div class="preloader">
+    <div class="loader"></div>
+</div>
+
+<!-- Header & Navigation -->
+<header>
+    <div class="container nav-container">
+        <div class="logo">Alex <span>Carter</span></div>
+        <nav>
+            <ul>
+                <li><a href="#home">Home</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a href="#portfolio">Portfolio</a></li>
+                <li><a href="#services">Services</a></li>
+                <li><a href="#todo">To-Do List</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+        </nav>
+        <div class="hamburger">
+            <i class="fas fa-bars"></i>
+        </div>
+    </div>
+</header>
+
+<!-- Hero Section -->
+<section class="hero fade-in" id="home">
+    <div class="container">
+        <div class="hero-content">
+            <h1>Professional Web Developer</h1>
+            <p>Creating modern, responsive, and user-friendly websites that drive results.</p>
+            <a href="#contact" class="btn">Get In Touch</a>
+        </div>
+    </div>
+</section>
+
+<!-- About Section -->
+<section class="section fade-in" id="about">
+    <div class="container">
+        <div class="section-title">
+            <h2>About Me</h2>
+        </div>
+        <div class="about-content">
+            <div class="about-text">
+                <h3>I'm Alex Carter, a passionate web developer based in New York.</h3>
+                <p>With over 5 years of experience in front-end development, I specialize in creating beautiful, functional, and responsive websites that provide exceptional user experiences.</p>
+                <p>My approach combines technical expertise with creative problem-solving to deliver solutions that meet both business objectives and user needs.</p>
+                <div class="skills">
+                    <span class="skill">HTML5</span>
+                    <span class="skill">CSS3</span>
+                    <span class="skill">JavaScript</span>
+                    <span class="skill">React</span>
+                    <span class="skill">Node.js</span>
+                    <span class="skill">Responsive Design</span>
+                    <span class="skill">UI/UX</span>
+                    <span class="skill">Git</span>
+                </div>
+            </div>
+            <div class="about-image">
+                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1374&q=80" alt="Alex Carter" style="width:100%; border-radius:10px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Portfolio Section -->
+<section class="section portfolio fade-in" id="portfolio">
+    <div class="container">
+        <div class="section-title">
+            <h2>My Portfolio</h2>
+        </div>
+        <div class="portfolio-grid">
+            <div class="portfolio-card">
+                <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80" alt="Project 1">
+                <div class="portfolio-overlay">
+                    <h3>E-Commerce Platform</h3>
+                    <p>A fully responsive online store built with React and Node.js.</p>
+                    <a href="#">View Project</a>
+                </div>
+            </div>
+            <div class="portfolio-card">
+                <img src="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80" alt="Project 2">
+                <div class="portfolio-overlay">
+                    <h3>Task Management App</h3>
+                    <p>A productivity app with real-time collaboration features.</p>
+                    <a href="#">View Project</a>
+                </div>
+            </div>
+            <div class="portfolio-card">
+                <img src="https://images.unsplash.com/photo-1516321310764-8d9c5f3f6624?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80" alt="Project 3">
+                <div class="portfolio-overlay">
+                    <h3>Portfolio Website</h3>
+                    <p>A modern portfolio showcasing creative design and animations.</p>
+                    <a href="#">View Project</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Services Section -->
+<section class="section services fade-in" id="services">
+    <div class="container">
+        <div class="section-title">
+            <h2>My Services</h2>
+        </div>
+        <div class="services-grid">
+            <div class="service-card">
+                <i class="fas fa-code"></i>
+                <h3>Web Development</h3>
+                <p>Custom website development using the latest technologies to ensure fast, secure, and scalable solutions.</p>
+            </div>
+            <div class="service-card">
+                <i class="fas fa-mobile-alt"></i>
+                <h3>Responsive Design</h3>
+                <p>Mobile-first approach to ensure your website looks and works perfectly on all devices and screen sizes.</p>
+            </div>
+            <div class="service-card">
+                <i class="fas fa-paint-brush"></i>
+                <h3>UI/UX Design</h3>
+                <p>User-centered design that enhances usability and creates engaging digital experiences for your audience.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- To-Do List Section -->
+<section class="section todo-section fade-in" id="todo">
+    <div class="container">
+        <div class="section-title">
+            <h2>Interactive To-Do List</h2>
+        </div>
+        <div class="todo-container">
+            <div class="todo-header">
+                <h3>My Tasks</h3>
+                <p>Add, complete, and remove tasks from your list</p>
+            </div>
+            <div class="todo-input">
+                <input type="text" id="todo-input" placeholder="Add a new task...">
+                <button id="add-btn">Add</button>
+            </div>
+            <ul class="todo-list" id="todo-list">
+                <!-- Tasks will be added here dynamically -->
+            </ul>
+        </div>
+    </div>
+</section>
+
+<!-- Contact Section -->
+<section class="section contact fade-in" id="contact">
+    <div class="container">
+        <div class="section-title">
+            <h2>Contact Me</h2>
+        </div>
+        <div class="contact-container">
+            <div class="contact-info">
+                <h3>Let's Work Together</h3>
+                <p>Have a project in mind or want to discuss potential opportunities? Feel free to reach out using the contact form or through my direct contact information below.</p>
+                <div class="contact-details">
+                    <div>
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>123 Web Dev Street, New York, NY 10001</span>
+                    </div>
+                    <div>
+                        <i class="fas fa-phone"></i>
+                        <span>(555) 123-4567</span>
+                    </div>
+                    <div>
+                        <i class="fas fa-envelope"></i>
+                        <span>alex@webdevportfolio.com</span>
+                    </div>
+                </div>
+            </div>
+            <div class="contact-form">
+                <form id="contactForm">
+                    <div class="form-group">
+                        <label for="name">Name</label>
+                        <input type="text" id="name" class="form-control" required>
+                        <div class="error" id="name-error">Please enter your name</div>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" class="form-control" required>
+                        <div class="error" id="email-error">Please enter a valid email</div>
+                    </div>
+                    <div class="form-group">
+                        <label for="subject">Subject</label>
+                        <input type="text" id="subject" class="form-control" required>
+                        <div class="error" id="subject-error">Please enter a subject</div>
+                    </div>
+                    <div class="form-group">
+                        <label for="message">Message</label>
+                        <textarea id="message" class="form-control" required></textarea>
+                        <div class="error" id="message-error">Please enter your message</div>
+                    </div>
+                    <button type="submit" class="btn btn-accent">Send Message</button>
+                    <div class="form-message" id="form-message"></div>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer class="fade-in">
+    <div class="container">
+        <div class="logo">Alex <span>Carter</span></div>
+        <div class="social-links">
+            <a href="#"><i class="fab fa-github"></i></a>
+            <a href="#"><i class="fab fa-linkedin"></i></a>
+            <a href="#"><i class="fab fa-twitter"></i></a>
+            <a href="#"><i class="fab fa-instagram"></i></a>
+        </div>
+        <p>© 2025 Alex Carter. All rights reserved.</p>
+    </div>
+</footer>
+
+<script>
+    // Preloader
+    window.addEventListener('load', () => {
+        const preloader = document.querySelector('.preloader');
+        setTimeout(() => {
+            preloader.classList.add('hidden');
+        }, 1000);
+    });
+
+    // Mobile Navigation Toggle
+    const hamburger = document.querySelector('.hamburger');
+    const nav = document.querySelector('nav ul');
+    
+    hamburger.addEventListener('click', () => {
+        nav.classList.toggle('active');
+    });
+    
+    // Smooth Scrolling for Navigation Links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const targetId = this.getAttribute('href');
+            const targetElement = document.querySelector(targetId);
+            
+            window.scrollTo({
+                top: targetElement.offsetTop - 80,
+                behavior: 'smooth'
+            });
+            
+            // Close mobile menu if open
+            nav.classList.remove('active');
+        });
+    });
+    
+    // Scroll Animations
+    const fadeElements = document.querySelectorAll('.fade-in');
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+            }
+        });
+    }, { threshold: 0.1 });
+    
+    fadeElements.forEach(element => observer.observe(element));
+    
+    // To-Do List Functionality
+    const todoInput = document.getElementById('todo-input');
+    const addBtn = document.getElementById('add-btn');
+    const todoList = document.getElementById('todo-list');
+    
+    // Load tasks from localStorage
+    document.addEventListener('DOMContentLoaded', () => {
+        const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+        tasks.forEach(task => {
+            addTask(task.text, task.completed);
+        });
+    });
+    
+    // Add new task
+    addBtn.addEventListener('click', () => addTask());
+    todoInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            addTask();
+        }
+    });
+    
+    function addTask(text = todoInput.value.trim(), completed = false) {
+        if (text) {
+            const li = document.createElement('li');
+            li.className = `todo-item ${completed ? 'completed' : ''}`;
+            
+            li.innerHTML = `
+                <input type="checkbox" class="complete-check" ${completed ? 'checked' : ''}>
+                <span>${text}</span>
+                <button class="delete-btn"><i class="fas fa-trash"></i></button>
+            `;
+            
+            todoList.appendChild(li);
+            todoInput.value = '';
+            
+            // Update localStorage
+            const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+            tasks.push({ text, completed });
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+            
+            // Add event listeners to new task
+            const completeCheck = li.querySelector('.complete-check');
+            const deleteBtn = li.querySelector('.delete-btn');
+            
+            completeCheck.addEventListener('change', function() {
+                li.classList.toggle('completed', this.checked);
+                const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+                const taskIndex = tasks.findIndex(task => task.text === text);
+                if (taskIndex !== -1) {
+                    tasks[taskIndex].completed = this.checked;
+                    localStorage.setItem('tasks', JSON.stringify(tasks));
+                }
+            });
+            
+            deleteBtn.addEventListener('click', function() {
+                li.remove();
+                const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+                const updatedTasks = tasks.filter(task => task.text !== text);
+                localStorage.setItem('tasks', JSON.stringify(updatedTasks));
+            });
+        }
+    }
+    
+    // Form Validation with Loading State
+    const contactForm = document.getElementById('contactForm');
+    const formMessage = document.getElementById('form-message');
+    
+    contactForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        let isValid = true;
+        
+        // Validate name
+        const name = document.getElementById('name');
+        const nameError = document.getElementById('name-error');
+        if (!name.value.trim()) {
+            nameError.style.display = 'block';
+            isValid = false;
+        } else {
+            nameError.style.display = 'none';
+        }
+        
+        // Validate email
+        const email = document.getElementById('email');
+        const emailError = document.getElementById('email-error');
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        
+        if (!email.value.trim()) {
+            emailError.textContent = 'Please enter your email';
+            emailError.style.display = 'block';
+            isValid = false;
+        } else if (!emailRegex.test(email.value)) {
+            emailError.textContent = 'Please enter a valid email';
+            emailError.style.display = 'block';
+            isValid = false;
+        } else {
+            emailError.style.display = 'none';
+        }
+        
+        // Validate subject
+        const subject = document.getElementById('subject');
+        const subjectError = document.getElementById('subject-error');
+        if (!subject.value.trim()) {
+            subjectError.style.display = 'block';
+            isValid = false;
+        } else {
+            subjectError.style.display = 'none';
+        }
+        
+        // Validate message
+        const message = document.getElementById('message');
+        const messageError = document.getElementById('message-error');
+        if (!message.value.trim()) {
+            messageError.style.display = 'block';
+            isValid = false;
+        } else {
+            messageError.style.display = 'none';
+        }
+        
+        // Simulate form submission with loading state
+        if (isValid) {
+            contactForm.classList.add('loading');
+            formMessage.style.display = 'none';
+            
+            setTimeout(() => {
+                contactForm.classList.remove('loading');
+                formMessage.className = 'form-message success';
+                formMessage.textContent = 'Thank you for your message! I will get back to you soon.';
+                contactForm.reset();
+                
+                setTimeout(() => {
+                    formMessage.style.display = 'none';
+                }, 3000);
+            }, 1000);
+        } else {
+            formMessage.className = 'form-message error';
+            formMessage.textContent = 'Please fix the errors above and try again.';
+            formMessage.style.display = 'block';
+            
+            setTimeout(() => {
+                formMessage.style.display = 'none';
+            }, 3000);
+        }
+    });
+    
+    // Input field validation on blur
+    document.getElementById('name').addEventListener('blur', function() {
+        if (!this.value.trim()) {
+            document.getElementById('name-error').style.display = 'block';
+        } else {
+            document.getElementById('name-error').style.display = 'none';
+        }
+    });
+    
+    document.getElementById('email').addEventListener('blur', function() {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const emailError = document.getElementById('email-error');
+        
+        if (!this.value.trim()) {
+            emailError.textContent = 'Please enter your email';
+            emailError.style.display = 'block';
+        } else if (!emailRegex.test(this.value)) {
+            emailError.textContent = 'Please enter a valid email';
+            emailError.style.display = 'block';
+        } else {
+            emailError.style.display = 'none';
+        }
+    });
+    
+    document.getElementById('subject').addEventListener('blur', function() {
+        if (!this.value.trim()) {
+            document.getElementById('subject-error').style.display = 'block';
+        } else {
+            document.getElementById('subject-error').style.display = 'none';
+        }
+    });
+    
+    document.getElementById('message').addEventListener('blur', function() {
+        if (!this.value.trim()) {
+            document.getElementById('message-error').style.display = 'block';
+        } else {
+            document.getElementById('message-error').style.display = 'none';
+        }
+    });
+</script>
+</body>
+</html>
